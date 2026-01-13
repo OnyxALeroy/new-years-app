@@ -30,7 +30,6 @@ class UserInDB(UserBase):
     id: str
     hashed_password: str
     created_at: datetime
-    is_active: bool = True
 
     class Config:
         from_attributes = True
@@ -42,7 +41,6 @@ class UserResponse(BaseModel):
     username: str
     role: UserRole
     created_at: datetime
-    is_active: bool
 
     class Config:
         from_attributes = True

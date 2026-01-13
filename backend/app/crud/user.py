@@ -18,7 +18,6 @@ class UserCRUD:
         # Truncate password to max 72 characters for bcrypt
         user_dict["hashed_password"] = get_password_hash(password[:72])
         user_dict["created_at"] = datetime.utcnow()
-        user_dict["is_active"] = True
         
         result = await database[self.collection_name].insert_one(user_dict)
         user_dict["_id"] = result.inserted_id

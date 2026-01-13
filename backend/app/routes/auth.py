@@ -6,7 +6,7 @@ from typing import Optional
 from app.core.security import verify_token, create_access_token
 from app.core.config import settings
 from app.crud.user import user_crud
-from app.schemas.user import UserCreate, UserResponse, Token, LoginRequest, UserRole
+from app.schemas.user import UserCreate, UserResponse, Token, LoginRequest, UserRole, UserUpdate
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer()
@@ -41,13 +41,11 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return user
 
 
-async def get_current_active_user(current_user: dict = Depends(get_current_user)) -> dict:
-    if not current_user.get("is_active", True):
-        raise HTTPException(status_code=400, detail="Inactive user")
+async def get_current_user_auth(current_user: dict = Depends(get_current_user)) -> dict:
     return current_user
 
 
-async def get_admin_user(current_user: dict = Depends(get_current_active_user)) -> dict:
+async def get_admin_user(current_user: dict = Depends(get_current_user_auth)) -> dict:
     if current_user.get("role") != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -72,8 +70,7 @@ async def register(user: UserCreate):
         email=db_user["email"],
         username=db_user["username"],
         role=db_user["role"],
-        created_at=db_user["created_at"],
-        is_active=db_user["is_active"]
+        created_at=db_user["created_at"]
     )
 
 
@@ -97,14 +94,13 @@ async def login(login_data: LoginRequest):
 
 
 @router.get("/me", response_model=UserResponse)
-async def read_users_me(current_user: dict = Depends(get_current_active_user)):
+async def read_users_me(current_user: dict = Depends(get_current_user_auth)):
     return UserResponse(
         id=str(current_user["_id"]),
         email=current_user["email"],
         username=current_user["username"],
         role=current_user["role"],
-        created_at=current_user["created_at"],
-        is_active=current_user["is_active"]
+        created_at=current_user["created_at"]
     )
 
 
@@ -117,8 +113,29 @@ async def get_users(skip: int = 0, limit: int = 100, current_user: dict = Depend
             email=user["email"],
             username=user["username"],
             role=user["role"],
-            created_at=user["created_at"],
-            is_active=user["is_active"]
+            created_at=user["created_at"]
         )
         for user in users
     ]
+
+
+@router.patch("/users/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: str,
+    user_update: UserUpdate,
+    current_user: dict = Depends(get_admin_user)
+):
+    updated_user = await user_crud.update_user(user_id, user_update)
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return UserResponse(
+        id=str(updated_user["_id"]),
+        email=updated_user["email"],
+        username=updated_user["username"],
+        role=updated_user["role"],
+        created_at=updated_user["created_at"]
+    )
