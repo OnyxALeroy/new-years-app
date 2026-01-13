@@ -1,5 +1,4 @@
 from .user import UserCreate, UserUpdate, UserResponse, Token, TokenData, LoginRequest
-from .resolution import ResolutionCreate, ResolutionUpdate, ResolutionResponse
 
 __all__ = [
     "UserCreate",
@@ -7,8 +6,5 @@ __all__ = [
     "UserResponse",
     "Token",
     "TokenData",
-    "LoginRequest",
-    "ResolutionCreate",
-    "ResolutionUpdate",
-    "ResolutionResponse"
+    "LoginRequest"
 ]

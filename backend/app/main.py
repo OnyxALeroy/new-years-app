@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.database import connect_to_mongo, close_mongo_connection
 from app.crud.user import user_crud
-from app.routes import auth_router, resolutions_router
+from app.routes import auth_router
 
 
 @asynccontextmanager
@@ -32,7 +32,6 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
-app.include_router(resolutions_router)
 
 
 @app.get("/")

@@ -14,7 +14,9 @@ class UserCRUD:
     async def create_user(self, user_data: UserCreate) -> dict:
         database = await get_database()
         user_dict = user_data.model_dump()
-        user_dict["hashed_password"] = get_password_hash(user_dict.pop("password"))
+        password = user_dict.pop("password")
+        # Truncate password to max 72 characters for bcrypt
+        user_dict["hashed_password"] = get_password_hash(password[:72])
         user_dict["created_at"] = datetime.utcnow()
         user_dict["is_active"] = True
         
