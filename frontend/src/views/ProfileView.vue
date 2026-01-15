@@ -1,832 +1,972 @@
 <template>
-  <div class="profile-container">
-    <div class="profile-header">
-      <h1>My Profile</h1>
-      <div class="user-info-card">
-        <div class="user-avatar">
-          <div class="avatar-circle">
-            {{ user?.username?.charAt(0).toUpperCase() }}
-          </div>
+    <div class="profile-container">
+        <div class="profile-header">
+            <h1>My Profile</h1>
+            <div class="user-info-card">
+                <div class="user-avatar">
+                    <div class="avatar-circle">
+                        {{ user?.username?.charAt(0).toUpperCase() }}
+                    </div>
+                </div>
+                <div class="user-details">
+                    <h2>{{ user?.username }}</h2>
+                    <p class="user-email">{{ user?.email }}</p>
+                    <p class="user-role">
+                        <span :class="['role-badge', user?.role]">{{
+                            user?.role
+                        }}</span>
+                    </p>
+                    <p class="user-joined">
+                        Joined: {{ formatDate(user?.created_at) }}
+                    </p>
+                </div>
+            </div>
         </div>
-        <div class="user-details">
-          <h2>{{ user?.username }}</h2>
-          <p class="user-email">{{ user?.email }}</p>
-          <p class="user-role">
-            <span :class="['role-badge', user?.role]">{{ user?.role }}</span>
-          </p>
-          <p class="user-joined">Joined: {{ formatDate(user?.created_at) }}</p>
+
+        <div class="profile-content">
+            <div class="payment-summary">
+                <h3>Payment Summary</h3>
+                <div class="summary-cards">
+                    <div class="summary-card total-due">
+                        <div class="card-icon">💰</div>
+                        <div class="card-content">
+                            <div class="card-label">Total Amount Due</div>
+                            <div class="card-amount">
+                                ${{ totalDue.toFixed(2) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="summary-card total-paid">
+                        <div class="card-icon">✅</div>
+                        <div class="card-content">
+                            <div class="card-label">Total Amount Paid</div>
+                            <div class="card-amount">
+                                ${{ totalPaid.toFixed(2) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="summary-card remaining">
+                        <div class="card-icon">📋</div>
+                        <div class="card-content">
+                            <div class="card-label">Remaining Balance</div>
+                            <div class="card-amount">
+                                ${{ remainingBalance.toFixed(2) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="my-events">
+                <h3>My Events ({{ userEvents.length }})</h3>
+                <div v-if="loading" class="loading">Loading events...</div>
+                <div v-else-if="error" class="error">{{ error }}</div>
+                <div v-else-if="userEvents.length === 0" class="empty-state">
+                    <h4>No events yet</h4>
+                    <p>You haven't participated in any events yet.</p>
+                    <router-link to="/events" class="browse-events-btn">
+                        Browse Events
+                    </router-link>
+                </div>
+                <div v-else class="events-grid">
+                    <div
+                        v-for="event in userEvents"
+                        :key="event.id"
+                        class="event-card"
+                    >
+                        <div class="event-header">
+                            <h4>{{ event.description }}</h4>
+                            <div class="event-badges">
+                                <span
+                                    v-if="
+                                        event.organizers.includes(
+                                            user?.username,
+                                        )
+                                    "
+                                    class="badge organizer"
+                                >
+                                    Organizer
+                                </span>
+                                <span class="badge participant"
+                                    >Participant</span
+                                >
+                            </div>
+                        </div>
+
+                        <div class="event-details">
+                            <div class="detail-row">
+                                <span class="detail-label">📍 Locations:</span>
+                                <div class="detail-value tags">
+                                    <span
+                                        v-for="location in event.locations"
+                                        :key="location"
+                                        class="tag"
+                                    >
+                                        {{ location }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="detail-row">
+                                <span class="detail-label">📅 Dates:</span>
+                                <div class="detail-value dates">
+                                    <div
+                                        v-for="date in event.dates.slice(0, 2)"
+                                        :key="date"
+                                        class="date-item"
+                                    >
+                                        {{ formatDateTime(date) }}
+                                    </div>
+                                    <span
+                                        v-if="event.dates.length > 2"
+                                        class="more-dates"
+                                    >
+                                        +{{ event.dates.length - 2 }} more
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div
+                                v-if="getUserParticipant(event)"
+                                class="payment-info"
+                            >
+                                <div class="payment-row">
+                                    <span>Due:</span>
+                                    <span class="amount due"
+                                        >${{
+                                            getUserParticipant(
+                                                event,
+                                            )?.due_payment.toFixed(2)
+                                        }}</span
+                                    >
+                                </div>
+                                <div class="payment-row">
+                                    <span>Paid:</span>
+                                    <span class="amount paid"
+                                        >${{
+                                            getUserParticipant(
+                                                event,
+                                            )?.paid_amount.toFixed(2)
+                                        }}</span
+                                    >
+                                </div>
+                                <div class="payment-row">
+                                    <span>Balance:</span>
+                                    <span
+                                        :class="[
+                                            'amount',
+                                            {
+                                                'paid-full':
+                                                    getUserParticipant(event)
+                                                        ?.paid_amount >=
+                                                    getUserParticipant(event)
+                                                        ?.due_payment,
+                                                partial:
+                                                    getUserParticipant(event)
+                                                        ?.paid_amount > 0 &&
+                                                    getUserParticipant(event)
+                                                        ?.paid_amount <
+                                                        getUserParticipant(
+                                                            event,
+                                                        )?.due_payment,
+                                                unpaid:
+                                                    getUserParticipant(event)
+                                                        ?.paid_amount === 0,
+                                            },
+                                        ]"
+                                    >
+                                        ${{
+                                            (
+                                                getUserParticipant(event)
+                                                    ?.due_payment -
+                                                getUserParticipant(event)
+                                                    ?.paid_amount
+                                            ).toFixed(2)
+                                        }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div
+                                v-if="
+                                    getUserParticipant(event)?.tags.length > 0
+                                "
+                                class="dietary-tags"
+                            >
+                                <span class="detail-label">🍽️ Dietary:</span>
+                                <div class="detail-value tags">
+                                    <span
+                                        v-for="tag in getUserParticipant(event)
+                                            ?.tags"
+                                        :key="tag"
+                                        class="tag dietary"
+                                    >
+                                        {{ tag }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="event-footer">
+                            <span class="event-date"
+                                >Created:
+                                {{ formatDate(event.created_at) }}</span
+                            >
+                            <button
+                                @click="viewEventDetails(event)"
+                                class="view-btn"
+                            >
+                                View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <!-- Event Details Modal -->
+        <div v-if="selectedEvent" class="modal-overlay" @click="closeDetails">
+            <div class="modal details-modal" @click.stop>
+                <div class="details-header">
+                    <h2>{{ selectedEvent.description }}</h2>
+                    <button @click="closeDetails" class="close-btn">×</button>
+                </div>
+
+                <div class="details-content">
+                    <div class="detail-section">
+                        <h3>📍 Locations</h3>
+                        <div class="tags">
+                            <span
+                                v-for="location in selectedEvent.locations"
+                                :key="location"
+                                class="tag"
+                            >
+                                {{ location }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>📅 Event Dates</h3>
+                        <div class="dates-list">
+                            <div
+                                v-for="date in selectedEvent.dates"
+                                :key="date"
+                                class="date-item"
+                            >
+                                {{ formatDateTime(date) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>👥 Organizers</h3>
+                        <div class="tags">
+                            <span
+                                v-for="organizer in selectedEvent.organizers"
+                                :key="organizer"
+                                class="tag"
+                            >
+                                {{ organizer }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>🎫 Your Participation</h3>
+                        <div
+                            v-if="getUserParticipant(selectedEvent)"
+                            class="user-participation"
+                        >
+                            <div class="participation-row">
+                                <span>Amount Due:</span>
+                                <span class="amount"
+                                    >${{
+                                        getUserParticipant(
+                                            selectedEvent,
+                                        )?.due_payment.toFixed(2)
+                                    }}</span
+                                >
+                            </div>
+                            <div class="participation-row">
+                                <span>Amount Paid:</span>
+                                <span class="amount"
+                                    >${{
+                                        getUserParticipant(
+                                            selectedEvent,
+                                        )?.paid_amount.toFixed(2)
+                                    }}</span
+                                >
+                            </div>
+                            <div class="participation-row">
+                                <span>Remaining Balance:</span>
+                                <span class="amount"
+                                    >${{
+                                        (
+                                            getUserParticipant(selectedEvent)
+                                                ?.due_payment -
+                                            getUserParticipant(selectedEvent)
+                                                ?.paid_amount
+                                        ).toFixed(2)
+                                    }}</span
+                                >
+                            </div>
+                            <div
+                                v-if="
+                                    getUserParticipant(selectedEvent)?.tags
+                                        .length > 0
+                                "
+                                class="dietary-info"
+                            >
+                                <span>Dietary Requirements:</span>
+                                <div class="tags">
+                                    <span
+                                        v-for="tag in getUserParticipant(
+                                            selectedEvent,
+                                        )?.tags"
+                                        :key="tag"
+                                        class="tag dietary"
+                                    >
+                                        {{ tag }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="not-participating">
+                            You are not participating in this event.
+                        </div>
+                    </div>
+
+                    <div
+                        v-if="selectedEvent.notes.length > 0"
+                        class="detail-section"
+                    >
+                        <h3>📝 Notes</h3>
+                        <ul class="notes-list">
+                            <li v-for="note in selectedEvent.notes" :key="note">
+                                {{ note }}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <div class="profile-content">
-      <div class="payment-summary">
-        <h3>Payment Summary</h3>
-        <div class="summary-cards">
-          <div class="summary-card total-due">
-            <div class="card-icon">💰</div>
-            <div class="card-content">
-              <div class="card-label">Total Amount Due</div>
-              <div class="card-amount">${{ totalDue.toFixed(2) }}</div>
-            </div>
-          </div>
-          
-          <div class="summary-card total-paid">
-            <div class="card-icon">✅</div>
-            <div class="card-content">
-              <div class="card-label">Total Amount Paid</div>
-              <div class="card-amount">${{ totalPaid.toFixed(2) }}</div>
-            </div>
-          </div>
-          
-          <div class="summary-card remaining">
-            <div class="card-icon">📋</div>
-            <div class="card-content">
-              <div class="card-label">Remaining Balance</div>
-              <div class="card-amount">${{ remainingBalance.toFixed(2) }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="my-events">
-        <h3>My Events ({{ userEvents.length }})</h3>
-        <div v-if="loading" class="loading">Loading events...</div>
-        <div v-else-if="error" class="error">{{ error }}</div>
-        <div v-else-if="userEvents.length === 0" class="empty-state">
-          <h4>No events yet</h4>
-          <p>You haven't participated in any events yet.</p>
-          <router-link to="/events" class="browse-events-btn">
-            Browse Events
-          </router-link>
-        </div>
-        <div v-else class="events-grid">
-          <div
-            v-for="event in userEvents"
-            :key="event.id"
-            class="event-card"
-          >
-            <div class="event-header">
-              <h4>{{ event.description }}</h4>
-              <div class="event-badges">
-                <span v-if="event.organizers.includes(user?.username)" class="badge organizer">
-                  Organizer
-                </span>
-                <span class="badge participant">Participant</span>
-              </div>
-            </div>
-            
-            <div class="event-details">
-              <div class="detail-row">
-                <span class="detail-label">📍 Locations:</span>
-                <div class="detail-value tags">
-                  <span v-for="location in event.locations" :key="location" class="tag">
-                    {{ location }}
-                  </span>
-                </div>
-              </div>
-              
-              <div class="detail-row">
-                <span class="detail-label">📅 Dates:</span>
-                <div class="detail-value dates">
-                  <div v-for="date in event.dates.slice(0, 2)" :key="date" class="date-item">
-                    {{ formatDateTime(date) }}
-                  </div>
-                  <span v-if="event.dates.length > 2" class="more-dates">
-                    +{{ event.dates.length - 2 }} more
-                  </span>
-                </div>
-              </div>
-              
-              <div v-if="getUserParticipant(event)" class="payment-info">
-                <div class="payment-row">
-                  <span>Due:</span>
-                  <span class="amount due">${{ getUserParticipant(event)?.due_payment.toFixed(2) }}</span>
-                </div>
-                <div class="payment-row">
-                  <span>Paid:</span>
-                  <span class="amount paid">${{ getUserParticipant(event)?.paid_amount.toFixed(2) }}</span>
-                </div>
-                <div class="payment-row">
-                  <span>Balance:</span>
-                  <span 
-                    :class="[
-                      'amount', 
-                      { 
-                        'paid-full': getUserParticipant(event)?.paid_amount >= getUserParticipant(event)?.due_payment,
-                        'partial': getUserParticipant(event)?.paid_amount > 0 && getUserParticipant(event)?.paid_amount < getUserParticipant(event)?.due_payment,
-                        'unpaid': getUserParticipant(event)?.paid_amount === 0
-                      }
-                    ]"
-                  >
-                    ${{ (getUserParticipant(event)?.due_payment - getUserParticipant(event)?.paid_amount).toFixed(2) }}
-                  </span>
-                </div>
-              </div>
-              
-              <div v-if="getUserParticipant(event)?.tags.length > 0" class="dietary-tags">
-                <span class="detail-label">🍽️ Dietary:</span>
-                <div class="detail-value tags">
-                  <span v-for="tag in getUserParticipant(event)?.tags" :key="tag" class="tag dietary">
-                    {{ tag }}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="event-footer">
-              <span class="event-date">Created: {{ formatDate(event.created_at) }}</span>
-              <button @click="viewEventDetails(event)" class="view-btn">
-                View Details
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Event Details Modal -->
-    <div v-if="selectedEvent" class="modal-overlay" @click="closeDetails">
-      <div class="modal details-modal" @click.stop>
-        <div class="details-header">
-          <h2>{{ selectedEvent.description }}</h2>
-          <button @click="closeDetails" class="close-btn">×</button>
-        </div>
-        
-        <div class="details-content">
-          <div class="detail-section">
-            <h3>📍 Locations</h3>
-            <div class="tags">
-              <span v-for="location in selectedEvent.locations" :key="location" class="tag">
-                {{ location }}
-              </span>
-            </div>
-          </div>
-          
-          <div class="detail-section">
-            <h3>📅 Event Dates</h3>
-            <div class="dates-list">
-              <div v-for="date in selectedEvent.dates" :key="date" class="date-item">
-                {{ formatDateTime(date) }}
-              </div>
-            </div>
-          </div>
-          
-          <div class="detail-section">
-            <h3>👥 Organizers</h3>
-            <div class="tags">
-              <span v-for="organizer in selectedEvent.organizers" :key="organizer" class="tag">
-                {{ organizer }}
-              </span>
-            </div>
-          </div>
-          
-          <div class="detail-section">
-            <h3>🎫 Your Participation</h3>
-            <div v-if="getUserParticipant(selectedEvent)" class="user-participation">
-              <div class="participation-row">
-                <span>Amount Due:</span>
-                <span class="amount">${{ getUserParticipant(selectedEvent)?.due_payment.toFixed(2) }}</span>
-              </div>
-              <div class="participation-row">
-                <span>Amount Paid:</span>
-                <span class="amount">${{ getUserParticipant(selectedEvent)?.paid_amount.toFixed(2) }}</span>
-              </div>
-              <div class="participation-row">
-                <span>Remaining Balance:</span>
-                <span class="amount">${{ (getUserParticipant(selectedEvent)?.due_payment - getUserParticipant(selectedEvent)?.paid_amount).toFixed(2) }}</span>
-              </div>
-              <div v-if="getUserParticipant(selectedEvent)?.tags.length > 0" class="dietary-info">
-                <span>Dietary Requirements:</span>
-                <div class="tags">
-                  <span v-for="tag in getUserParticipant(selectedEvent)?.tags" :key="tag" class="tag dietary">
-                    {{ tag }}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div v-else class="not-participating">
-              You are not participating in this event.
-            </div>
-          </div>
-          
-          <div v-if="selectedEvent.notes.length > 0" class="detail-section">
-            <h3>📝 Notes</h3>
-            <ul class="notes-list">
-              <li v-for="note in selectedEvent.notes" :key="note">{{ note }}</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useAuthStore } from '@/stores/auth'
-import { useEventStore } from '@/stores/events'
-import type { Event, Participant } from '@/types'
+import { ref, onMounted, computed } from "vue";
+import { useAuthStore } from "@/stores/auth";
+import { useEventStore } from "@/stores/events";
+import type { Event, Participant } from "@/types";
 
-const authStore = useAuthStore()
-const eventStore = useEventStore()
+const authStore = useAuthStore();
+const eventStore = useEventStore();
 
-const user = computed(() => authStore.user)
-const events = computed(() => eventStore.events)
-const loading = computed(() => eventStore.loading)
-const error = computed(() => eventStore.error)
+const user = computed(() => authStore.user);
+const events = computed(() => eventStore.events);
+const loading = computed(() => eventStore.loading);
+const error = computed(() => eventStore.error);
 
-const selectedEvent = ref<Event | null>(null)
+const selectedEvent = ref<Event | null>(null);
 
 const userEvents = computed(() => {
-  const username = user.value?.username
-  if (!username) return []
-  
-  return events.value.filter(event => 
-    event.participants.some(participant => participant.user_id === username) ||
-    event.organizers.includes(username)
-  )
-})
+    const username = user.value?.username;
+    if (!username) return [];
+
+    return events.value.filter(
+        (event) =>
+            event.participants.some(
+                (participant) => participant.user_id === username,
+            ) || event.organizers.includes(username),
+    );
+});
 
 const totalDue = computed(() => {
-  return userEvents.value.reduce((total, event) => {
-    const participant = getUserParticipant(event)
-    return total + (participant?.due_payment || 0)
-  }, 0)
-})
+    return userEvents.value.reduce((total, event) => {
+        const participant = getUserParticipant(event);
+        return total + (participant?.due_payment || 0);
+    }, 0);
+});
 
 const totalPaid = computed(() => {
-  return userEvents.value.reduce((total, event) => {
-    const participant = getUserParticipant(event)
-    return total + (participant?.paid_amount || 0)
-  }, 0)
-})
+    return userEvents.value.reduce((total, event) => {
+        const participant = getUserParticipant(event);
+        return total + (participant?.paid_amount || 0);
+    }, 0);
+});
 
 const remainingBalance = computed(() => {
-  return totalDue.value - totalPaid.value
-})
+    return totalDue.value - totalPaid.value;
+});
 
 const getUserParticipant = (event: Event): Participant | undefined => {
-  const username = user.value?.username
-  return event.participants.find(participant => participant.user_id === username)
-}
+    const username = user.value?.username;
+    return event.participants.find(
+        (participant) => participant.user_id === username,
+    );
+};
 
 onMounted(async () => {
-  try {
-    await eventStore.fetchEvents()
-  } catch (error) {
-    console.error('Failed to fetch events:', error)
-  }
-})
+    try {
+        await eventStore.fetchEvents();
+    } catch (error) {
+        console.error("Failed to fetch events:", error);
+    }
+});
 
 const viewEventDetails = (event: Event) => {
-  selectedEvent.value = event
-}
+    selectedEvent.value = event;
+};
 
 const closeDetails = () => {
-  selectedEvent.value = null
-}
+    selectedEvent.value = null;
+};
 
 const formatDate = (dateString: string | undefined) => {
-  if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString()
-}
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString();
+};
 
 const formatDateTime = (dateString: string) => {
-  const date = new Date(dateString)
-  return date.toLocaleString()
-}
+    const date = new Date(dateString);
+    return date.toLocaleString();
+};
 </script>
 
 <style scoped>
 .profile-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
 }
 
 .profile-header {
-  margin-bottom: 2rem;
+    margin-bottom: 2rem;
 }
 
 .profile-header h1 {
-  color: #333;
-  margin-bottom: 1.5rem;
+    color: #333;
+    margin-bottom: 1.5rem;
 }
 
 .user-info-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
-  padding: 2rem;
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .user-avatar {
-  flex-shrink: 0;
+    flex-shrink: 0;
 }
 
 .avatar-circle {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  font-weight: bold;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    border: 3px solid rgba(255, 255, 255, 0.3);
 }
 
 .user-details {
-  flex: 1;
+    flex: 1;
 }
 
 .user-details h2 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.8rem;
+    margin: 0 0 0.5rem 0;
+    font-size: 1.8rem;
 }
 
 .user-email {
-  margin: 0.25rem 0;
-  opacity: 0.9;
-  font-size: 1.1rem;
+    margin: 0.25rem 0;
+    opacity: 0.9;
+    font-size: 1.1rem;
 }
 
 .user-role {
-  margin: 0.5rem 0;
+    margin: 0.5rem 0;
 }
 
 .role-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-transform: capitalize;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .user-joined {
-  margin: 0.5rem 0 0 0;
-  opacity: 0.8;
-  font-size: 0.9rem;
+    margin: 0.5rem 0 0 0;
+    opacity: 0.8;
+    font-size: 0.9rem;
 }
 
 .profile-content {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
 }
 
 .payment-summary {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .payment-summary h3 {
-  margin: 0 0 1.5rem 0;
-  color: #333;
-  font-size: 1.3rem;
+    margin: 0 0 1.5rem 0;
+    color: #333;
+    font-size: 1.3rem;
 }
 
 .summary-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
 }
 
 .summary-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.5rem;
-  border-radius: 12px;
-  border-left: 4px solid;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border-left: 4px solid;
 }
 
 .summary-card.total-due {
-  background: #fdf2f2;
-  border-left-color: #e74c3c;
+    background: #fdf2f2;
+    border-left-color: #e74c3c;
 }
 
 .summary-card.total-paid {
-  background: #f0fdf4;
-  border-left-color: #27ae60;
+    background: #f0fdf4;
+    border-left-color: #27ae60;
 }
 
 .summary-card.remaining {
-  background: #fefce8;
-  border-left-color: #f59e0b;
+    background: #fefce8;
+    border-left-color: #f59e0b;
 }
 
 .card-icon {
-  font-size: 2rem;
+    font-size: 2rem;
 }
 
 .card-content {
-  flex: 1;
+    flex: 1;
 }
 
 .card-label {
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.25rem;
 }
 
 .card-amount {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #333;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
 }
 
 .my-events {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .my-events h3 {
-  margin: 0 0 1.5rem 0;
-  color: #333;
-  font-size: 1.3rem;
+    margin: 0 0 1.5rem 0;
+    color: #333;
+    font-size: 1.3rem;
 }
 
-.loading, .error, .empty-state {
-  text-align: center;
-  padding: 3rem;
-  color: #666;
+.loading,
+.error,
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #666;
 }
 
 .error {
-  color: #e74c3c;
-  background-color: #fdf2f2;
-  border-radius: 8px;
-  border: 1px solid #f5c6cb;
+    color: #e74c3c;
+    background-color: #fdf2f2;
+    border-radius: 8px;
+    border: 1px solid #f5c6cb;
 }
 
 .empty-state h4 {
-  color: #333;
-  margin-bottom: 0.5rem;
+    color: #333;
+    margin-bottom: 0.5rem;
 }
 
 .browse-events-btn {
-  display: inline-block;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  text-decoration: none;
-  margin-top: 1rem;
-  transition: transform 0.3s ease;
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    margin-top: 1rem;
+    transition: transform 0.3s ease;
 }
 
 .browse-events-btn:hover {
-  transform: translateY(-2px);
+    transform: translateY(-2px);
 }
 
 .events-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1.5rem;
 }
 
 .event-card {
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 1.5rem;
-  border-left: 4px solid #667eea;
-  transition: all 0.3s ease;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border-left: 4px solid #667eea;
+    transition: all 0.3s ease;
 }
 
 .event-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 .event-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
 }
 
 .event-header h4 {
-  margin: 0;
-  color: #333;
-  font-size: 1.1rem;
-  flex: 1;
+    margin: 0;
+    color: #333;
+    font-size: 1.1rem;
+    flex: 1;
 }
 
 .event-badges {
-  display: flex;
-  gap: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
 }
 
 .badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
 }
 
 .badge.organizer {
-  background: #e8f5e8;
-  color: #27ae60;
+    background: #e8f5e8;
+    color: #27ae60;
 }
 
 .badge.participant {
-  background: #e3f2fd;
-  color: #1976d2;
+    background: #e3f2fd;
+    color: #1976d2;
 }
 
 .event-details {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 .detail-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .detail-label {
-  font-weight: 500;
-  color: #555;
-  font-size: 0.9rem;
+    font-weight: 500;
+    color: #555;
+    font-size: 0.9rem;
 }
 
 .detail-value {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .tag {
-  background: #e9ecef;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  color: #495057;
+    background: #e9ecef;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: #495057;
 }
 
 .tag.dietary {
-  background: #fff3cd;
-  color: #856404;
+    background: #fff3cd;
+    color: #856404;
 }
 
 .dates {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
 .date-item {
-  font-size: 0.85rem;
-  color: #666;
-  background: white;
-  padding: 0.5rem;
-  border-radius: 6px;
-  border-left: 3px solid #667eea;
+    font-size: 0.85rem;
+    color: #666;
+    background: white;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border-left: 3px solid #667eea;
 }
 
 .more-dates {
-  font-size: 0.8rem;
-  color: #888;
-  font-style: italic;
+    font-size: 0.8rem;
+    color: #888;
+    font-style: italic;
 }
 
 .payment-info {
-  background: white;
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #e1e5e9;
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e1e5e9;
 }
 
 .payment-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.25rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
 }
 
 .amount {
-  font-weight: 600;
+    font-weight: 600;
 }
 
 .amount.due {
-  color: #e74c3c;
+    color: #e74c3c;
 }
 
 .amount.paid {
-  color: #27ae60;
+    color: #27ae60;
 }
 
 .amount.paid-full {
-  color: #27ae60;
+    color: #27ae60;
 }
 
 .amount.partial {
-  color: #f39c12;
+    color: #f39c12;
 }
 
 .amount.unpaid {
-  color: #e74c3c;
+    color: #e74c3c;
 }
 
 .dietary-tags {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .event-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e1e5e9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e1e5e9;
 }
 
 .event-date {
-  font-size: 0.85rem;
-  color: #888;
+    font-size: 0.85rem;
+    color: #888;
 }
 
 .view-btn {
-  background: #667eea;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
 .view-btn:hover {
-  background: #5a6fd8;
+    background: #5a6fd8;
 }
 
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
 }
 
 .modal {
-  background: white;
-  border-radius: 12px;
-  max-width: 700px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
+    background: white;
+    border-radius: 12px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .details-modal {
-  padding: 2rem;
+    padding: 2rem;
 }
 
 .details-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
 }
 
 .details-header h2 {
-  margin: 0;
-  color: #333;
+    margin: 0;
+    color: #333;
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #666;
-  padding: 0;
-  width: 2rem;
-  height: 2rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
 }
 
 .close-btn:hover {
-  color: #333;
+    color: #333;
 }
 
 .details-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .detail-section h3 {
-  color: #333;
-  margin: 0 0 0.75rem 0;
-  font-size: 1.1rem;
+    color: #333;
+    margin: 0 0 0.75rem 0;
+    font-size: 1.1rem;
 }
 
 .dates-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .user-participation {
-  background: #f8f9fa;
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #e1e5e9;
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e1e5e9;
 }
 
 .participation-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
 }
 
 .participation-row:last-child {
-  border-bottom: none;
+    border-bottom: none;
 }
 
 .dietary-info {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e9ecef;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
 }
 
 .not-participating {
-  color: #666;
-  font-style: italic;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 8px;
+    color: #666;
+    font-style: italic;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
 }
 
 .notes-list {
-  margin: 0;
-  padding-left: 1.5rem;
-  color: #666;
+    margin: 0;
+    padding-left: 1.5rem;
+    color: #666;
 }
 
 .notes-list li {
-  margin-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
 }
 
 @media (max-width: 768px) {
-  .profile-container {
-    padding: 1rem;
-  }
-  
-  .user-info-card {
-    flex-direction: column;
-    text-align: center;
-    gap: 1rem;
-  }
-  
-  .summary-cards {
-    grid-template-columns: 1fr;
-  }
-  
-  .events-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .event-footer {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-  
-  .detail-row {
-    gap: 0.25rem;
-  }
-  
-  .payment-row {
-    font-size: 0.9rem;
-  }
+    .profile-container {
+        padding: 1rem;
+    }
+
+    .user-info-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+
+    .summary-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .events-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .event-footer {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .detail-row {
+        gap: 0.25rem;
+    }
+
+    .payment-row {
+        font-size: 0.9rem;
+    }
 }
 </style>

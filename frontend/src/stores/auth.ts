@@ -1,63 +1,67 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import type { User, UserRole } from '@/types'
-import { authAPI } from '@/utils/api'
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import type { User, UserRole } from "@/types";
+import { authAPI } from "@/utils/api";
 
-export const useAuthStore = defineStore('auth', () => {
-  const user = ref<User | null>(null)
-  const token = ref<string | null>(localStorage.getItem('access_token'))
+export const useAuthStore = defineStore("auth", () => {
+  const user = ref<User | null>(null);
+  const token = ref<string | null>(localStorage.getItem("access_token"));
 
-  const isAuthenticated = computed(() => !!token.value && !!user.value)
-  const isAdmin = computed(() => user.value?.role === 'admin')
+  const isAuthenticated = computed(() => !!token.value && !!user.value);
+  const isAdmin = computed(() => user.value?.role === "admin");
 
   const login = async (username: string, password: string) => {
     try {
-      const response = await authAPI.login({ username, password })
-      token.value = response.access_token
-      localStorage.setItem('access_token', response.access_token)
-      
-      await fetchCurrentUser()
-      return true
-    } catch (error) {
-      logout()
-      throw error
-    }
-  }
+      const response = await authAPI.login({ username, password });
+      token.value = response.access_token;
+      localStorage.setItem("access_token", response.access_token);
 
-  const register = async (username: string, email: string, password: string) => {
-    try {
-      const user = await authAPI.register({ username, email, password })
-      return user
+      await fetchCurrentUser();
+      return true;
     } catch (error) {
-      throw error
+      logout();
+      throw error;
     }
-  }
+  };
+
+  const register = async (
+    username: string,
+    email: string,
+    password: string,
+  ) => {
+    try {
+      const user = await authAPI.register({ username, email, password });
+      return user;
+    } catch (error) {
+      throw error;
+    }
+  };
 
   const fetchCurrentUser = async () => {
     try {
-      const currentUser = await authAPI.getCurrentUser()
-      user.value = currentUser
+      const currentUser = await authAPI.getCurrentUser();
+      user.value = currentUser;
     } catch (error) {
-      logout()
-      throw error
+      logout();
+      throw error;
     }
-  }
+  };
 
   const logout = () => {
-    user.value = null
-    token.value = null
-    localStorage.removeItem('access_token')
-  }
+    user.value = null;
+    token.value = null;
+    localStorage.removeItem("access_token");
+  };
 
   const initialize = async () => {
     if (token.value) {
       try {
-        await fetchCurrentUser()
+        await fetchCurrentUser();
       } catch (error) {
-        logout()
+        logout();
       }
     }
-  }
+  };
 
   return {
     user,
@@ -69,5 +73,5 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     fetchCurrentUser,
     initialize,
-  }
-})
+  };
+});

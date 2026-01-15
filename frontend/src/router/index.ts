@@ -1,75 +1,78 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { createRouter, createWebHistory } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/',
-      name: 'Home',
-      component: () => import('@/views/HomeView.vue'),
-      meta: { requiresAuth: false }
+      path: "/",
+      name: "Home",
+      component: () => import("@/views/HomeView.vue"),
+      meta: { requiresAuth: false },
     },
     {
-      path: '/login',
-      name: 'Login',
-      component: () => import('@/views/LoginView.vue'),
-      meta: { requiresAuth: false }
+      path: "/login",
+      name: "Login",
+      component: () => import("@/views/LoginView.vue"),
+      meta: { requiresAuth: false },
     },
     {
-      path: '/register',
-      name: 'Register',
-      component: () => import('@/views/RegisterView.vue'),
-      meta: { requiresAuth: false }
+      path: "/register",
+      name: "Register",
+      component: () => import("@/views/RegisterView.vue"),
+      meta: { requiresAuth: false },
     },
     {
-      path: '/events',
-      name: 'Events',
-      component: () => import('@/views/EventsView.vue'),
-      meta: { requiresAuth: true }
+      path: "/events",
+      name: "Events",
+      component: () => import("@/views/EventsView.vue"),
+      meta: { requiresAuth: true },
     },
     {
-      path: '/admin',
-      name: 'Admin',
-      component: () => import('@/views/AdminView.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true }
+      path: "/admin",
+      name: "Admin",
+      component: () => import("@/views/AdminView.vue"),
+      meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
-      path: '/profile',
-      name: 'Profile',
-      component: () => import('@/views/ProfileView.vue'),
-      meta: { requiresAuth: true }
+      path: "/profile",
+      name: "Profile",
+      component: () => import("@/views/ProfileView.vue"),
+      meta: { requiresAuth: true },
     },
   ],
-})
+});
 
 router.beforeEach(async (to, from, next) => {
-  const authStore = useAuthStore()
-  
+  const authStore = useAuthStore();
+
   if (!authStore.user && authStore.token) {
     try {
-      await authStore.fetchCurrentUser()
+      await authStore.fetchCurrentUser();
     } catch (error) {
-      authStore.logout()
+      authStore.logout();
     }
   }
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next('/login')
-    return
+    next("/login");
+    return;
   }
 
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
-    next('/events')
-    return
+    next("/events");
+    return;
   }
 
-  if ((to.name === 'Login' || to.name === 'Register') && authStore.isAuthenticated) {
-    next('/events')
-    return
+  if (
+    (to.name === "Login" || to.name === "Register") &&
+    authStore.isAuthenticated
+  ) {
+    next("/events");
+    return;
   }
 
-  next()
-})
+  next();
+});
 
-export default router
+export default router;

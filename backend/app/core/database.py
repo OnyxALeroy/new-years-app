@@ -1,16 +1,21 @@
-from motor.motor_asyncio import AsyncIOMotorClient
+from typing import Any
+
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+
 from app.core.config import settings
 
 
 class Database:
-    client: AsyncIOMotorClient = None
-    database = None
+    client: Any = None
+    database: Any = None
 
 
 db = Database()
 
 
 async def get_database():
+    if db.database is None:
+        raise ValueError("Database not connected. Call connect_to_mongo() first.")
     return db.database
 
 
@@ -20,4 +25,5 @@ async def connect_to_mongo():
 
 
 async def close_mongo_connection():
-    db.client.close()
+    if db.client:
+        db.client.close()

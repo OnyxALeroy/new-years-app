@@ -1,11 +1,14 @@
-from typing import List, Optional
-from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class Participant(BaseModel):
     user_id: str
-    tags: List[str] = Field(default_factory=list, description="e.g., ['vegan', 'halal']")
+    tags: List[str] = Field(
+        default_factory=list, description="e.g., ['vegan', 'halal']"
+    )
     due_payment: float = Field(default=0.0, ge=0)
     paid_amount: float = Field(default=0.0, ge=0)
 
