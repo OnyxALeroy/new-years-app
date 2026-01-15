@@ -11,7 +11,8 @@
         <router-link to="/" class="nav-link">Home</router-link>
         
         <template v-if="isAuthenticated">
-          <router-link to="/resolutions" class="nav-link">My Resolutions</router-link>
+          <router-link to="/events" class="nav-link">Events</router-link>
+          <router-link to="/profile" class="nav-link">My Profile</router-link>
           <router-link v-if="isAdmin" to="/admin" class="nav-link">Admin</router-link>
           
           <div class="user-menu">

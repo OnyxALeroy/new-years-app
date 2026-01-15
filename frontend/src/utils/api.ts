@@ -4,9 +4,10 @@ import type {
   LoginRequest, 
   RegisterRequest, 
   Token, 
-  Resolution, 
-  ResolutionCreate, 
-  ResolutionUpdate 
+  Event, 
+  EventCreate, 
+  EventUpdate, 
+  Participant
 } from '@/types'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
@@ -40,24 +41,32 @@ export const authAPI = {
     api.get('/auth/users').then(res => res.data),
 }
 
-export const resolutionsAPI = {
-  getResolutions: (): Promise<Resolution[]> =>
-    api.get('/resolutions/').then(res => res.data),
+export const eventsAPI = {
+  getEvents: (organizer?: string, location?: string): Promise<Event[]> =>
+    api.get('/events/', { params: { organizer, location } }).then(res => res.data),
   
-  getAllResolutions: (): Promise<Resolution[]> =>
-    api.get('/resolutions/all').then(res => res.data),
+  getEvent: (id: string): Promise<Event> =>
+    api.get(`/events/${id}`).then(res => res.data),
   
-  getResolution: (id: string): Promise<Resolution> =>
-    api.get(`/resolutions/${id}`).then(res => res.data),
+  createEvent: (data: EventCreate): Promise<Event> =>
+    api.post('/events/', data).then(res => res.data),
   
-  createResolution: (data: ResolutionCreate): Promise<Resolution> =>
-    api.post('/resolutions/', data).then(res => res.data),
+  updateEvent: (id: string, data: EventUpdate): Promise<Event> =>
+    api.patch(`/events/${id}`, data).then(res => res.data),
   
-  updateResolution: (id: string, data: ResolutionUpdate): Promise<Resolution> =>
-    api.put(`/resolutions/${id}`, data).then(res => res.data),
+  deleteEvent: (id: string): Promise<void> =>
+    api.delete(`/events/${id}`).then(res => res.data),
   
-  deleteResolution: (id: string): Promise<void> =>
-    api.delete(`/resolutions/${id}`).then(res => res.data),
+  addParticipant: (eventId: string, participant: Participant): Promise<Event> =>
+    api.post(`/events/${eventId}/participants`, participant).then(res => res.data),
+  
+  removeParticipant: (eventId: string, userId: string): Promise<Event> =>
+    api.delete(`/events/${eventId}/participants/${userId}`).then(res => res.data),
+  
+  updateParticipantPayment: (eventId: string, userId: string, paidAmount: number): Promise<Event> =>
+    api.patch(`/events/${eventId}/participants/${userId}/payment`, null, { 
+      params: { paid_amount: paidAmount } 
+    }).then(res => res.data),
 }
 
 export default api

@@ -33,8 +33,7 @@ services:
       - "8000:8000"
     depends_on:
       - mongodb
-    volumes:
-      - ./backend:/app
+    
     networks:
       - newyears-network
 
@@ -50,9 +49,7 @@ services:
       - "3000:3000"
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+    
     networks:
       - newyears-network
 

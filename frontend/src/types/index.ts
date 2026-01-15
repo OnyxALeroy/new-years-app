@@ -29,23 +29,42 @@ export interface Token {
   token_type: string
 }
 
-export interface Resolution {
-  id: string
-  title: string
-  description?: string
+export interface Participant {
   user_id: string
-  completed: boolean
+  tags: string[]
+  due_payment: number
+  paid_amount: number
+}
+
+export interface Event {
+  id: string
+  organizers: string[]
+  locations: string[]
+  description: string
+  dates: string[]
+  images: string[]
+  notes: string[]
+  participants: Participant[]
   created_at: string
-  updated_at: string
+  updated_at?: string
 }
 
-export interface ResolutionCreate {
-  title: string
-  description?: string
+export interface EventCreate {
+  organizers: string[]
+  locations: string[]
+  description: string
+  dates: string[]
+  images?: string[]
+  notes?: string[]
+  participants?: Participant[]
 }
 
-export interface ResolutionUpdate {
-  title?: string
+export interface EventUpdate {
+  organizers?: string[]
+  locations?: string[]
   description?: string
-  completed?: boolean
+  dates?: string[]
+  images?: string[]
+  notes?: string[]
+  participants?: Participant[]
 }

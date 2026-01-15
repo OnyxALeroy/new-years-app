@@ -23,9 +23,9 @@ const router = createRouter({
       meta: { requiresAuth: false }
     },
     {
-      path: '/resolutions',
-      name: 'Resolutions',
-      component: () => import('@/views/ResolutionsView.vue'),
+      path: '/events',
+      name: 'Events',
+      component: () => import('@/views/EventsView.vue'),
       meta: { requiresAuth: true }
     },
     {
@@ -33,6 +33,12 @@ const router = createRouter({
       name: 'Admin',
       component: () => import('@/views/AdminView.vue'),
       meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
+      path: '/profile',
+      name: 'Profile',
+      component: () => import('@/views/ProfileView.vue'),
+      meta: { requiresAuth: true }
     },
   ],
 })
@@ -54,12 +60,12 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
-    next('/resolutions')
+    next('/events')
     return
   }
 
   if ((to.name === 'Login' || to.name === 'Register') && authStore.isAuthenticated) {
-    next('/resolutions')
+    next('/events')
     return
   }
 
