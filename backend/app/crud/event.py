@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from bson import ObjectId
+from fastapi.encoders import jsonable_encoder
 
 from app.core.database import get_database
 from app.schemas.event import EventCreate, EventUpdate, Participant
@@ -13,12 +14,18 @@ class EventCRUD:
 
     async def create_event(self, event_data: EventCreate) -> dict:
         database = await get_database()
-        event_dict = event_data.model_dump()
-        event_dict["created_at"] = datetime.now()
+        # Use jsonable_encoder to convert date/time objects to strings
+        # This fixes the "bson.errors.InvalidDocument" error
+        event_dict = jsonable_encoder(event_data)
+        
+        # Add timestamps as real datetime objects (MongoDB handles these fine)
+        event_dict["created_at"] = datetime.utcnow()
+        event_dict["updated_at"] = datetime.utcnow()
 
         result = await database[self.collection_name].insert_one(event_dict)
-        event_dict["_id"] = result.inserted_id
-        return event_dict
+        
+        # Return the actual document from MongoDB to ensure all fields are present
+        return await database[self.collection_name].find_one({"_id": result.inserted_id})
 
     async def get_event_by_id(self, event_id: str) -> Optional[dict]:
         database = await get_database()
@@ -68,8 +75,10 @@ class EventCRUD:
         self, event_id: str, event_update: EventUpdate
     ) -> Optional[dict]:
         database = await get_database()
-        update_data = event_update.model_dump(exclude_unset=True)
-        update_data["updated_at"] = datetime.now()
+        # Use jsonable_encoder to convert date/time objects to strings
+        # This fixes the "bson.errors.InvalidDocument" error
+        update_data = jsonable_encoder(event_update, exclude_unset=True)
+        update_data["updated_at"] = datetime.utcnow()
 
         result = await database[self.collection_name].update_one(
             {"_id": ObjectId(event_id)}, {"$set": update_data}
@@ -87,8 +96,8 @@ class EventCRUD:
         result = await database[self.collection_name].update_one(
             {"_id": ObjectId(event_id)},
             {
-                "$push": {"participants": participant.model_dump()},
-                "$set": {"updated_at": datetime.now()},
+                "$push": {"participants": jsonable_encoder(participant)},
+                "$set": {"updated_at": datetime.utcnow()},
             },
         )
 
@@ -103,7 +112,7 @@ class EventCRUD:
             {"_id": ObjectId(event_id)},
             {
                 "$pull": {"participants": {"user_id": user_id}},
-                "$set": {"updated_at": datetime.now()},
+                "$set": {"updated_at": datetime.utcnow()},
             },
         )
 
@@ -121,7 +130,7 @@ class EventCRUD:
             {
                 "$set": {
                     "participants.$.paid_amount": paid_amount,
-                    "updated_at": datetime.now(),
+                    "updated_at": datetime.utcnow(),
                 }
             },
         )

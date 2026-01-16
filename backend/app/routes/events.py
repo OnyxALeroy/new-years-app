@@ -16,14 +16,18 @@ async def create_event(
     db_event = await event_crud.create_event(event)
     return EventResponse(
         id=str(db_event["_id"]),
-        organizers=db_event["organizers"],
-        locations=db_event["locations"],
-        description=db_event["description"],
-        dates=db_event["dates"],
-        images=db_event["images"],
-        notes=db_event["notes"],
+        name=db_event["name"],
+        organizers=db_event.get("organizers", []),
+        locations=db_event.get("locations", []),
+        description=db_event.get("description", ""),
+        start_date=db_event["start_date"],
+        end_date=db_event.get("end_date"),
+        start_time=db_event["start_time"],
+        end_time=db_event.get("end_time"),
+        images=db_event.get("images", []),
+        notes=db_event.get("notes", []),
         participants=[
-            Participant(**participant) for participant in db_event["participants"]
+            Participant(**participant) for participant in db_event.get("participants", [])
         ],
         created_at=db_event["created_at"],
         updated_at=db_event.get("updated_at"),
@@ -47,14 +51,18 @@ async def get_events(
     return [
         EventResponse(
             id=str(event["_id"]),
-            organizers=event["organizers"],
-            locations=event["locations"],
-            description=event["description"],
-            dates=event["dates"],
-            images=event["images"],
-            notes=event["notes"],
+            name=event.get("name", ""),
+            organizers=event.get("organizers", []),
+            locations=event.get("locations", []),
+            description=event.get("description", ""),
+            start_date=event["start_date"],
+            end_date=event.get("end_date"),
+            start_time=event["start_time"],
+            end_time=event.get("end_time"),
+            images=event.get("images", []),
+            notes=event.get("notes", []),
             participants=[
-                Participant(**participant) for participant in event["participants"]
+                Participant(**participant) for participant in event.get("participants", [])
             ],
             created_at=event["created_at"],
             updated_at=event.get("updated_at"),
@@ -73,14 +81,18 @@ async def get_event(event_id: str):
 
     return EventResponse(
         id=str(event["_id"]),
-        organizers=event["organizers"],
-        locations=event["locations"],
-        description=event["description"],
-        dates=event["dates"],
-        images=event["images"],
-        notes=event["notes"],
+        name=event.get("name", ""),
+        organizers=event.get("organizers", []),
+        locations=event.get("locations", []),
+        description=event.get("description", ""),
+        start_date=event["start_date"],
+        end_date=event.get("end_date"),
+        start_time=event["start_time"],
+        end_time=event.get("end_time"),
+        images=event.get("images", []),
+        notes=event.get("notes", []),
         participants=[
-            Participant(**participant) for participant in event["participants"]
+            Participant(**participant) for participant in event.get("participants", [])
         ],
         created_at=event["created_at"],
         updated_at=event.get("updated_at"),
@@ -101,14 +113,18 @@ async def update_event(
 
     return EventResponse(
         id=str(updated_event["_id"]),
-        organizers=updated_event["organizers"],
-        locations=updated_event["locations"],
-        description=updated_event["description"],
-        dates=updated_event["dates"],
-        images=updated_event["images"],
-        notes=updated_event["notes"],
+        name=updated_event.get("name", ""),
+        organizers=updated_event.get("organizers", []),
+        locations=updated_event.get("locations", []),
+        description=updated_event.get("description", ""),
+        start_date=updated_event["start_date"],
+        end_date=updated_event.get("end_date"),
+        start_time=updated_event["start_time"],
+        end_time=updated_event.get("end_time"),
+        images=updated_event.get("images", []),
+        notes=updated_event.get("notes", []),
         participants=[
-            Participant(**participant) for participant in updated_event["participants"]
+            Participant(**participant) for participant in updated_event.get("participants", [])
         ],
         created_at=updated_event["created_at"],
         updated_at=updated_event.get("updated_at"),
@@ -139,14 +155,18 @@ async def add_participant(
 
     return EventResponse(
         id=str(updated_event["_id"]),
-        organizers=updated_event["organizers"],
-        locations=updated_event["locations"],
-        description=updated_event["description"],
-        dates=updated_event["dates"],
-        images=updated_event["images"],
-        notes=updated_event["notes"],
+        name=updated_event.get("name", ""),
+        organizers=updated_event.get("organizers", []),
+        locations=updated_event.get("locations", []),
+        description=updated_event.get("description", ""),
+        start_date=updated_event["start_date"],
+        end_date=updated_event.get("end_date"),
+        start_time=updated_event["start_time"],
+        end_time=updated_event.get("end_time"),
+        images=updated_event.get("images", []),
+        notes=updated_event.get("notes", []),
         participants=[
-            Participant(**participant) for participant in updated_event["participants"]
+            Participant(**participant) for participant in updated_event.get("participants", [])
         ],
         created_at=updated_event["created_at"],
         updated_at=updated_event.get("updated_at"),
@@ -166,14 +186,18 @@ async def remove_participant(
 
     return EventResponse(
         id=str(updated_event["_id"]),
-        organizers=updated_event["organizers"],
-        locations=updated_event["locations"],
-        description=updated_event["description"],
-        dates=updated_event["dates"],
-        images=updated_event["images"],
-        notes=updated_event["notes"],
+        name=updated_event.get("name", ""),
+        organizers=updated_event.get("organizers", []),
+        locations=updated_event.get("locations", []),
+        description=updated_event.get("description", ""),
+        start_date=updated_event["start_date"],
+        end_date=updated_event.get("end_date"),
+        start_time=updated_event["start_time"],
+        end_time=updated_event.get("end_time"),
+        images=updated_event.get("images", []),
+        notes=updated_event.get("notes", []),
         participants=[
-            Participant(**participant) for participant in updated_event["participants"]
+            Participant(**participant) for participant in updated_event.get("participants", [])
         ],
         created_at=updated_event["created_at"],
         updated_at=updated_event.get("updated_at"),
@@ -206,14 +230,18 @@ async def update_participant_payment(
 
     return EventResponse(
         id=str(updated_event["_id"]),
-        organizers=updated_event["organizers"],
-        locations=updated_event["locations"],
-        description=updated_event["description"],
-        dates=updated_event["dates"],
-        images=updated_event["images"],
-        notes=updated_event["notes"],
+        name=updated_event.get("name", ""),
+        organizers=updated_event.get("organizers", []),
+        locations=updated_event.get("locations", []),
+        description=updated_event.get("description", ""),
+        start_date=updated_event["start_date"],
+        end_date=updated_event.get("end_date"),
+        start_time=updated_event["start_time"],
+        end_time=updated_event.get("end_time"),
+        images=updated_event.get("images", []),
+        notes=updated_event.get("notes", []),
         participants=[
-            Participant(**participant) for participant in updated_event["participants"]
+            Participant(**participant) for participant in updated_event.get("participants", [])
         ],
         created_at=updated_event["created_at"],
         updated_at=updated_event.get("updated_at"),

@@ -38,10 +38,14 @@ export interface Participant {
 
 export interface Event {
   id: string;
+  name: string;
   organizers: string[];
   locations: string[];
   description: string;
-  dates: string[];
+  start_date: string;
+  end_date?: string;
+  start_time: string;
+  end_time?: string;
   images: string[];
   notes: string[];
   participants: Participant[];
@@ -50,20 +54,28 @@ export interface Event {
 }
 
 export interface EventCreate {
+  name: string;
   organizers: string[];
   locations: string[];
   description: string;
-  dates: string[];
+  start_date: string;
+  end_date?: string;
+  start_time: string;
+  end_time?: string;
   images?: string[];
   notes?: string[];
   participants?: Participant[];
 }
 
 export interface EventUpdate {
+  name?: string;
   organizers?: string[];
   locations?: string[];
   description?: string;
-  dates?: string[];
+  start_date?: string;
+  end_date?: string;
+  start_time?: string;
+  end_time?: string;
   images?: string[];
   notes?: string[];
   participants?: Participant[];

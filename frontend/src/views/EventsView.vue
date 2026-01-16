@@ -47,7 +47,8 @@
                 class="event-card"
             >
                 <div class="event-header">
-                    <h3>{{ event.description }}</h3>
+                    <h3>{{ event.name }}</h3>
+                    <p class="event-description">{{ event.description }}</p>
                     <div class="event-badges">
                         <span
                             v-if="
@@ -64,6 +65,25 @@
                             class="badge participant"
                         >
                             Participant
+                        </span>
+                    </div>
+                </div>
+
+                <div class="event-schedule">
+                    <div class="schedule-compact">
+                        <span class="schedule-icon">📅</span>
+                        <span class="schedule-text">
+                            {{ formatDate(event.start_date) }}
+                            <span v-if="event.end_date && event.end_date !== event.start_date">
+                                - {{ formatDate(event.end_date) }}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="schedule-compact">
+                        <span class="schedule-icon">⏰</span>
+                        <span class="schedule-text">
+                            {{ formatTime(event.start_time) }}
+                            <span v-if="event.end_time">- {{ formatTime(event.end_time) }}</span>
                         </span>
                     </div>
                 </div>
@@ -172,6 +192,17 @@
                 <h2>Create New Event</h2>
                 <form @submit.prevent="createEvent">
                     <div class="form-group">
+                        <label for="name">Event Name</label>
+                        <input
+                            type="text"
+                            id="name"
+                            v-model="newEvent.name"
+                            required
+                            placeholder="Enter event name..."
+                        />
+                    </div>
+
+                    <div class="form-group">
                         <label for="description">Description</label>
                         <textarea
                             id="description"
@@ -207,36 +238,43 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="dates">Event Dates</label>
-                        <div class="dates-input">
-                            <div
-                                v-for="(date, index) in eventDates"
-                                :key="index"
-                                class="date-input-group"
-                            >
-                                <input
-                                    type="datetime-local"
-                                    v-model="eventDates[index]"
-                                    :min="minDateTime"
-                                    required
-                                />
-                                <button
-                                    v-if="eventDates.length > 1"
-                                    type="button"
-                                    @click="removeDate(index)"
-                                    class="remove-date-btn"
-                                >
-                                    ×
-                                </button>
-                            </div>
-                            <button
-                                type="button"
-                                @click="addDate"
-                                class="add-date-btn"
-                            >
-                                + Add Date
-                            </button>
-                        </div>
+                        <label for="start_date">Start Date</label>
+                        <input
+                            type="date"
+                            id="start_date"
+                            v-model="newEvent.start_date"
+                            :min="new Date().toISOString().split('T')[0]"
+                            required
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="end_date">End Date (optional for multi-day events)</label>
+                        <input
+                            type="date"
+                            id="end_date"
+                            v-model="newEvent.end_date"
+                            :min="newEvent.start_date"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="start_time">Start Time</label>
+                        <input
+                            type="time"
+                            id="start_time"
+                            v-model="newEvent.start_time"
+                            required
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="end_time">End Time (optional)</label>
+                        <input
+                            type="time"
+                            id="end_time"
+                            v-model="newEvent.end_time"
+                        />
                     </div>
 
                     <div class="form-group">
@@ -277,6 +315,17 @@
                 <h2>Edit Event</h2>
                 <form @submit.prevent="updateEvent">
                     <div class="form-group">
+                        <label for="edit-name">Event Name</label>
+                        <input
+                            type="text"
+                            id="edit-name"
+                            v-model="editingEventData.name"
+                            required
+                            placeholder="Enter event name..."
+                        />
+                    </div>
+
+                    <div class="form-group">
                         <label for="edit-description">Description</label>
                         <textarea
                             id="edit-description"
@@ -314,36 +363,42 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="edit-dates">Event Dates</label>
-                        <div class="dates-input">
-                            <div
-                                v-for="(date, index) in editEventDates"
-                                :key="`edit-${index}`"
-                                class="date-input-group"
-                            >
-                                <input
-                                    type="datetime-local"
-                                    v-model="editEventDates[index]"
-                                    :min="minDateTime"
-                                    required
-                                />
-                                <button
-                                    v-if="editEventDates.length > 1"
-                                    type="button"
-                                    @click="removeEditDate(index)"
-                                    class="remove-date-btn"
-                                >
-                                    ×
-                                </button>
-                            </div>
-                            <button
-                                type="button"
-                                @click="addEditDate"
-                                class="add-date-btn"
-                            >
-                                + Add Date
-                            </button>
-                        </div>
+                        <label for="edit-start_date">Start Date</label>
+                        <input
+                            type="date"
+                            id="edit-start_date"
+                            v-model="editingEventData.start_date"
+                            required
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-end_date">End Date (optional for multi-day events)</label>
+                        <input
+                            type="date"
+                            id="edit-end_date"
+                            v-model="editingEventData.end_date"
+                            :min="editingEventData.start_date"
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-start_time">Start Time</label>
+                        <input
+                            type="time"
+                            id="edit-start_time"
+                            v-model="editingEventData.start_time"
+                            required
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-end_time">End Time (optional)</label>
+                        <input
+                            type="time"
+                            id="edit-end_time"
+                            v-model="editingEventData.end_time"
+                        />
                     </div>
 
                     <div class="form-group">
@@ -378,20 +433,31 @@
         <div v-if="selectedEvent" class="modal-overlay" @click="closeDetails">
             <div class="modal details-modal" @click.stop>
                 <div class="details-header">
-                    <h2>{{ selectedEvent.description }}</h2>
+                    <h2>{{ selectedEvent.name }}</h2>
+                    <p class="event-description">{{ selectedEvent.description }}</p>
                     <button @click="closeDetails" class="close-btn">×</button>
                 </div>
 
                 <div class="details-content">
                     <div class="detail-section">
-                        <h3>📅 Event Dates</h3>
-                        <div class="dates-list">
-                            <div
-                                v-for="date in selectedEvent.dates"
-                                :key="date"
-                                class="date-item"
-                            >
-                                {{ formatDateTime(date) }}
+                        <h3>📅 Event Schedule</h3>
+                        <div class="schedule-info">
+                            <div class="schedule-row">
+                                <span class="schedule-label">Start:</span>
+                                <span class="schedule-value">
+                                    {{ formatDate(selectedEvent.start_date) }} at {{ formatTime(selectedEvent.start_time) }}
+                                </span>
+                            </div>
+                            <div v-if="selectedEvent.end_date" class="schedule-row">
+                                <span class="schedule-label">End:</span>
+                                <span class="schedule-value">
+                                    {{ formatDate(selectedEvent.end_date) }} 
+                                    <span v-if="selectedEvent.end_time">at {{ formatTime(selectedEvent.end_time) }}</span>
+                                </span>
+                            </div>
+                            <div v-else-if="selectedEvent.end_time" class="schedule-row">
+                                <span class="schedule-label">End Time:</span>
+                                <span class="schedule-value">{{ formatTime(selectedEvent.end_time) }}</span>
                             </div>
                         </div>
                     </div>
@@ -549,30 +615,36 @@ const showEditForm = ref(false);
 const selectedEvent = ref<Event | null>(null);
 const editingEvent = ref<Event | null>(null);
 const editingEventData = reactive({
+    name: "",
     description: "",
     organizers: [] as string[],
     locations: [] as string[],
-    dates: [] as string[],
+    start_date: "",
+    end_date: "",
+    start_time: "",
+    end_time: "",
     notes: [] as string[],
 });
 
 const newEvent = reactive({
+    name: "",
     description: "",
     organizers: [] as string[],
     locations: [] as string[],
-    dates: [] as string[],
+    start_date: "",
+    end_date: "",
+    start_time: "",
+    end_time: "",
     notes: [] as string[],
 });
 
 const organizersText = ref("");
 const locationsText = ref("");
 const notesText = ref("");
-const eventDates = ref([""]);
 
 const editOrganizersText = ref("");
 const editLocationsText = ref("");
 const editNotesText = ref("");
-const editEventDates = ref([""]);
 
 const filteredEvents = computed(() => {
     let filtered = events.value;
@@ -598,11 +670,12 @@ const filteredEvents = computed(() => {
 
 const isFormValid = computed(() => {
     return (
+        newEvent.name.trim() &&
         newEvent.description.trim() &&
         newEvent.organizers.length > 0 &&
         newEvent.locations.length > 0 &&
-        newEvent.dates.length > 0 &&
-        eventDates.value.every((date) => date.trim() !== "")
+        newEvent.start_date &&
+        newEvent.start_time
     );
 });
 
@@ -618,13 +691,29 @@ onMounted(() => {
 
 const createEvent = async () => {
     try {
-        await eventStore.createEvent({
+        // Build event data, filtering out undefined values
+        const eventData: any = {
+            name: newEvent.name,
             description: newEvent.description,
             organizers: newEvent.organizers,
             locations: newEvent.locations,
-            dates: eventDates.value.filter((date) => date.trim() !== ""),
-            notes: newEvent.notes.length > 0 ? newEvent.notes : undefined,
-        });
+            start_date: newEvent.start_date,
+            start_time: newEvent.start_time + ":00", // Ensure HH:MM:SS format
+        };
+        
+        // Only include optional fields if they have values
+        if (newEvent.end_date) {
+            eventData.end_date = newEvent.end_date;
+        }
+        if (newEvent.end_time) {
+            eventData.end_time = newEvent.end_time + ":00";
+        }
+        if (newEvent.notes.length > 0) {
+            eventData.notes = newEvent.notes;
+        }
+        
+        console.log("Sending event data:", eventData);
+        await eventStore.createEvent(eventData);
         closeModal();
     } catch (error) {
         console.error("Failed to create event:", error);
@@ -647,36 +736,38 @@ const viewDetails = (event: Event) => {
 
 const closeModal = () => {
     showCreateForm.value = false;
+    newEvent.name = "";
     newEvent.description = "";
     newEvent.organizers = [];
     newEvent.locations = [];
+    newEvent.start_date = "";
+    newEvent.end_date = "";
+    newEvent.start_time = "";
+    newEvent.end_time = "";
     newEvent.notes = [];
     organizersText.value = "";
     locationsText.value = "";
     notesText.value = "";
-    eventDates.value = [""];
 };
 
-const addDate = () => {
-    eventDates.value.push("");
-};
 
-const removeDate = (index: number) => {
-    eventDates.value.splice(index, 1);
-};
 
 const startEditEvent = (event: Event) => {
     editingEvent.value = event;
+    editingEventData.name = event.name;
     editingEventData.description = event.description;
     editingEventData.organizers = [...event.organizers];
     editingEventData.locations = [...event.locations];
-    editingEventData.dates = [...event.dates];
+    editingEventData.start_date = event.start_date;
+    editingEventData.end_date = event.end_date || "";
+    // Format time for HTML time input (HH:MM format from HH:MM:SS)
+    editingEventData.start_time = event.start_time.substring(0, 5);
+    editingEventData.end_time = event.end_time ? event.end_time.substring(0, 5) : "";
     editingEventData.notes = [...event.notes];
 
     editOrganizersText.value = event.organizers.join("\n");
     editLocationsText.value = event.locations.join("\n");
     editNotesText.value = event.notes.join("\n");
-    editEventDates.value = [...event.dates];
 
     showEditForm.value = true;
 };
@@ -685,16 +776,29 @@ const updateEvent = async () => {
     if (!editingEvent.value) return;
 
     try {
-        await eventStore.updateEvent(editingEvent.value.id, {
+        // Build update data, filtering out undefined values
+        const updateData: any = {
+            name: editingEventData.name,
             description: editingEventData.description,
             organizers: editingEventData.organizers,
             locations: editingEventData.locations,
-            dates: editEventDates.value.filter((date) => date.trim() !== ""),
-            notes:
-                editingEventData.notes.length > 0
-                    ? editingEventData.notes
-                    : undefined,
-        });
+            start_date: editingEventData.start_date,
+            start_time: editingEventData.start_time + ":00", // Ensure HH:MM:SS format
+        };
+        
+        // Only include optional fields if they have values
+        if (editingEventData.end_date) {
+            updateData.end_date = editingEventData.end_date;
+        }
+        if (editingEventData.end_time) {
+            updateData.end_time = editingEventData.end_time + ":00";
+        }
+        if (editingEventData.notes.length > 0) {
+            updateData.notes = editingEventData.notes;
+        }
+        
+        console.log("Sending update data:", updateData);
+        await eventStore.updateEvent(editingEvent.value.id, updateData);
         closeEditModal();
     } catch (error) {
         console.error("Failed to update event:", error);
@@ -704,23 +808,21 @@ const updateEvent = async () => {
 const closeEditModal = () => {
     showEditForm.value = false;
     editingEvent.value = null;
+    editingEventData.name = "";
     editingEventData.description = "";
     editingEventData.organizers = [];
     editingEventData.locations = [];
+    editingEventData.start_date = "";
+    editingEventData.end_date = "";
+    editingEventData.start_time = "";
+    editingEventData.end_time = "";
     editingEventData.notes = [];
     editOrganizersText.value = "";
     editLocationsText.value = "";
     editNotesText.value = "";
-    editEventDates.value = [""];
 };
 
-const addEditDate = () => {
-    editEventDates.value.push("");
-};
 
-const removeEditDate = (index: number) => {
-    editEventDates.value.splice(index, 1);
-};
 
 const closeDetails = () => {
     selectedEvent.value = null;
@@ -746,12 +848,28 @@ const totalPaid = (event: Event): number => {
 };
 
 const formatDate = (dateString: string) => {
+    if (!dateString) return "";
     return new Date(dateString).toLocaleDateString();
 };
 
 const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString();
+};
+
+const formatTime = (timeString: string) => {
+    if (!timeString) return "";
+    
+    // Handle both HH:MM and HH:MM:SS formats
+    const [hours, minutes] = timeString.split(':');
+    const time = new Date();
+    time.setHours(parseInt(hours));
+    time.setMinutes(parseInt(minutes));
+    return time.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+    });
 };
 
 // Watch text areas and update arrays
@@ -909,11 +1027,44 @@ watch(editNotesText, (newText) => {
     margin-bottom: 1rem;
 }
 
+.event-schedule {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.schedule-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.schedule-icon {
+    font-size: 1rem;
+}
+
+.schedule-text {
+    font-weight: 500;
+}
+
 .event-header h3 {
     color: #333;
-    margin: 0;
+    margin: 0 0 0.5rem 0;
     font-size: 1.25rem;
     flex: 1;
+}
+
+.event-description {
+    color: #666;
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
 }
 
 .event-badges {
@@ -1080,8 +1231,15 @@ watch(editNotesText, (newText) => {
 }
 
 .details-header h2 {
-    margin: 0;
+    margin: 0 0 0.5rem 0;
     color: #333;
+}
+
+.details-header .event-description {
+    color: #666;
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
 }
 
 .close-btn {
@@ -1200,17 +1358,22 @@ watch(editNotesText, (newText) => {
     font-weight: 500;
 }
 
-.form-group textarea {
+.form-group textarea,
+.form-group input {
     width: 100%;
     padding: 0.75rem;
     border: 2px solid #e1e5e9;
     border-radius: 8px;
     font-size: 1rem;
     transition: border-color 0.3s ease;
+}
+
+.form-group textarea {
     resize: vertical;
 }
 
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group input:focus {
     outline: none;
     border-color: #667eea;
 }
@@ -1321,11 +1484,30 @@ watch(editNotesText, (newText) => {
     gap: 0.5rem;
 }
 
-.date-item {
-    background: #f8f9fa;
+.schedule-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.schedule-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 0.75rem;
+    background: #f8f9fa;
     border-radius: 8px;
     border-left: 4px solid #667eea;
+}
+
+.schedule-label {
+    font-weight: 600;
+    color: #333;
+    min-width: 80px;
+}
+
+.schedule-value {
+    color: #555;
     font-weight: 500;
 }
 
