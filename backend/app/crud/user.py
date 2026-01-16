@@ -68,6 +68,12 @@ class UserCRUD:
             return await self.get_user_by_id(user_id)
         return None
 
+    async def delete_user(self, user_id: str) -> bool:
+        database = await get_database()
+        assert database is not None
+        result = await database[self.collection_name].delete_one({"_id": ObjectId(user_id)})
+        return result.deleted_count > 0
+
     async def get_users(self, skip: int = 0, limit: int = 100) -> List[dict]:
         database = await get_database()
         assert database is not None
@@ -90,6 +96,15 @@ class UserCRUD:
                 role=UserRole.ADMIN,
             )
             await self.create_user(admin_user)
+        organizer_exists = await self.get_user_by_username("organizer")
+        if not organizer_exists:
+            organizer_user = UserCreate(
+                username="organizer",
+                email="organizer@newyears.com",
+                password="organizer123",
+                role=UserRole.ORGANIZER,
+            )
+            await self.create_user(organizer_user)
 
 
 user_crud = UserCRUD()

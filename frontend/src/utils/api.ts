@@ -39,6 +39,12 @@ export const authAPI = {
 
   getUsers: (): Promise<User[]> =>
     api.get("/auth/users").then((res) => res.data),
+
+  updateUser: (userId: string, data: { email?: string; username?: string; role?: string }): Promise<User> =>
+    api.patch(`/auth/users/${userId}`, data).then((res) => res.data),
+
+  deleteUser: (userId: string): Promise<void> =>
+    api.delete(`/auth/users/${userId}`).then((res) => res.data),
 };
 
 export const eventsAPI = {

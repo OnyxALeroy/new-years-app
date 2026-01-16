@@ -1,6 +1,7 @@
 export enum UserRole {
   UNAUTHENTICATED = "unauthenticated",
   USER = "user",
+  ORGANIZER = "organizer",
   ADMIN = "admin",
 }
 

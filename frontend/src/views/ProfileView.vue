@@ -112,19 +112,19 @@
                             <div class="detail-row">
                                 <span class="detail-label">📅 Dates:</span>
                                 <div class="detail-value dates">
+                                    <div class="date-item">
+                                        From: {{ formatDate(event.start_date) }}
+                                        {{ formatTime(event.start_time) }}
+                                    </div>
                                     <div
-                                        v-for="date in event.dates.slice(0, 2)"
-                                        :key="date"
+                                        v-if="event.end_date"
                                         class="date-item"
                                     >
-                                        {{ formatDateTime(date) }}
+                                        To: {{ formatDate(event.end_date) }}
+                                        <span v-if="event.end_time">{{
+                                            formatTime(event.end_time)
+                                        }}</span>
                                     </div>
-                                    <span
-                                        v-if="event.dates.length > 2"
-                                        class="more-dates"
-                                    >
-                                        +{{ event.dates.length - 2 }} more
-                                    </span>
                                 </div>
                             </div>
 
@@ -249,14 +249,25 @@
                     </div>
 
                     <div class="detail-section">
-                        <h3>📅 Event Dates</h3>
+                        <h3>📅 Event Schedule</h3>
                         <div class="dates-list">
+                            <div class="date-item">
+                                <strong>Starts:</strong>
+                                {{ formatDate(selectedEvent.start_date) }} at
+                                {{ formatTime(selectedEvent.start_time) }}
+                            </div>
                             <div
-                                v-for="date in selectedEvent.dates"
-                                :key="date"
+                                v-if="selectedEvent.end_date"
                                 class="date-item"
                             >
-                                {{ formatDateTime(date) }}
+                                <strong>Ends:</strong>
+                                {{ formatDate(selectedEvent.end_date) }}
+                                <span v-if="selectedEvent.end_time"
+                                    >at
+                                    {{
+                                        formatTime(selectedEvent.end_time)
+                                    }}</span
+                                >
                             </div>
                         </div>
                     </div>
@@ -433,6 +444,20 @@ const formatDate = (dateString: string | undefined) => {
 const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString();
+};
+
+const formatTime = (timeString: string) => {
+    if (!timeString) return "";
+    // Handle both HH:MM and HH:MM:SS formats
+    const [hours, minutes] = timeString.split(":");
+    const time = new Date();
+    time.setHours(parseInt(hours));
+    time.setMinutes(parseInt(minutes));
+    return time.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+    });
 };
 </script>
 

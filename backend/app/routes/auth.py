@@ -62,6 +62,17 @@ async def get_admin_user(current_user: dict = Depends(get_current_user_auth)) ->
     return current_user
 
 
+async def get_organizer_or_admin_user(
+    current_user: dict = Depends(get_current_user_auth),
+) -> dict:
+    if current_user.get("role") not in [UserRole.ADMIN, UserRole.ORGANIZER]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions, must be an organizer or admin.",
+        )
+    return current_user
+
+
 @router.post("/register", response_model=UserResponse)
 async def register(user: UserCreate):
     existing_user = await user_crud.get_user_by_username(user.username)
@@ -146,3 +157,15 @@ async def update_user(
         role=updated_user["role"],
         created_at=updated_user["created_at"],
     )
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: str, current_user: dict = Depends(get_admin_user)
+):
+    success = await user_crud.delete_user(user_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    return {"message": "User deleted successfully"}

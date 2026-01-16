@@ -3,16 +3,20 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.crud.event import event_crud
-from app.routes.auth import get_admin_user, get_current_user_auth
+from app.routes.auth import get_current_user_auth, get_organizer_or_admin_user
 from app.schemas.event import EventCreate, EventResponse, EventUpdate, Participant
+from app.schemas.user import UserRole
 
 router = APIRouter(prefix="/events", tags=["events"])
 
 
 @router.post("/", response_model=EventResponse)
 async def create_event(
-    event: EventCreate, current_user: dict = Depends(get_current_user_auth)
+    event: EventCreate, current_user: dict = Depends(get_organizer_or_admin_user)
 ):
+    username = current_user["username"]
+    if username not in event.organizers:
+        event.organizers.append(username)
     db_event = await event_crud.create_event(event)
     return EventResponse(
         id=str(db_event["_id"]),
@@ -27,7 +31,8 @@ async def create_event(
         images=db_event.get("images", []),
         notes=db_event.get("notes", []),
         participants=[
-            Participant(**participant) for participant in db_event.get("participants", [])
+            Participant(**participant)
+            for participant in db_event.get("participants", [])
         ],
         created_at=db_event["created_at"],
         updated_at=db_event.get("updated_at"),
@@ -62,7 +67,8 @@ async def get_events(
             images=event.get("images", []),
             notes=event.get("notes", []),
             participants=[
-                Participant(**participant) for participant in event.get("participants", [])
+                Participant(**participant)
+                for participant in event.get("participants", [])
             ],
             created_at=event["created_at"],
             updated_at=event.get("updated_at"),
@@ -105,6 +111,24 @@ async def update_event(
     event_update: EventUpdate,
     current_user: dict = Depends(get_current_user_auth),
 ):
+    event = await event_crud.get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+        )
+
+    user_role = current_user.get("role")
+    user_id = str(current_user["_id"])
+
+    if not (
+        user_role == UserRole.ADMIN
+        or (user_role == UserRole.ORGANIZER and user_id in event.get("organizers", []))
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to edit this event.",
+        )
+
     updated_event = await event_crud.update_event(event_id, event_update)
     if not updated_event:
         raise HTTPException(
@@ -124,7 +148,8 @@ async def update_event(
         images=updated_event.get("images", []),
         notes=updated_event.get("notes", []),
         participants=[
-            Participant(**participant) for participant in updated_event.get("participants", [])
+            Participant(**participant)
+            for participant in updated_event.get("participants", [])
         ],
         created_at=updated_event["created_at"],
         updated_at=updated_event.get("updated_at"),
@@ -132,7 +157,27 @@ async def update_event(
 
 
 @router.delete("/{event_id}")
-async def delete_event(event_id: str, current_user: dict = Depends(get_admin_user)):
+async def delete_event(
+    event_id: str, current_user: dict = Depends(get_current_user_auth)
+):
+    event = await event_crud.get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Event not found"
+        )
+
+    user_role = current_user.get("role")
+    user_id = str(current_user["_id"])
+
+    if not (
+        user_role == UserRole.ADMIN
+        or (user_role == UserRole.ORGANIZER and user_id in event.get("organizers", []))
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to delete this event.",
+        )
+
     success = await event_crud.delete_event(event_id)
     if not success:
         raise HTTPException(
@@ -166,7 +211,8 @@ async def add_participant(
         images=updated_event.get("images", []),
         notes=updated_event.get("notes", []),
         participants=[
-            Participant(**participant) for participant in updated_event.get("participants", [])
+            Participant(**participant)
+            for participant in updated_event.get("participants", [])
         ],
         created_at=updated_event["created_at"],
         updated_at=updated_event.get("updated_at"),
@@ -197,7 +243,8 @@ async def remove_participant(
         images=updated_event.get("images", []),
         notes=updated_event.get("notes", []),
         participants=[
-            Participant(**participant) for participant in updated_event.get("participants", [])
+            Participant(**participant)
+            for participant in updated_event.get("participants", [])
         ],
         created_at=updated_event["created_at"],
         updated_at=updated_event.get("updated_at"),
@@ -241,7 +288,8 @@ async def update_participant_payment(
         images=updated_event.get("images", []),
         notes=updated_event.get("notes", []),
         participants=[
-            Participant(**participant) for participant in updated_event.get("participants", [])
+            Participant(**participant)
+            for participant in updated_event.get("participants", [])
         ],
         created_at=updated_event["created_at"],
         updated_at=updated_event.get("updated_at"),

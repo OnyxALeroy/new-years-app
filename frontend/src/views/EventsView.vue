@@ -16,8 +16,8 @@
                     />
                 </div>
                 <button
-                    v-if="authStore.isAdmin"
-                    @click="showCreateForm = true"
+                    v-if="authStore.canCreateEvents"
+                    @click="openCreateModal"
                     class="create-btn"
                 >
                     + Create Event
@@ -52,8 +52,9 @@
                     <div class="event-badges">
                         <span
                             v-if="
+                                authStore.user &&
                                 event.organizers.includes(
-                                    authStore.user?.username,
+                                    authStore.user.username,
                                 )
                             "
                             class="badge organizer"
@@ -74,7 +75,12 @@
                         <span class="schedule-icon">📅</span>
                         <span class="schedule-text">
                             {{ formatDate(event.start_date) }}
-                            <span v-if="event.end_date && event.end_date !== event.start_date">
+                            <span
+                                v-if="
+                                    event.end_date &&
+                                    event.end_date !== event.start_date
+                                "
+                            >
                                 - {{ formatDate(event.end_date) }}
                             </span>
                         </span>
@@ -83,7 +89,9 @@
                         <span class="schedule-icon">⏰</span>
                         <span class="schedule-text">
                             {{ formatTime(event.start_time) }}
-                            <span v-if="event.end_time">- {{ formatTime(event.end_time) }}</span>
+                            <span v-if="event.end_time"
+                                >- {{ formatTime(event.end_time) }}</span
+                            >
                         </span>
                     </div>
                 </div>
@@ -166,17 +174,14 @@
                         View Details
                     </button>
                     <button
-                        v-if="authStore.isAdmin"
+                        v-if="canManageEvent(event)"
                         @click="startEditEvent(event)"
                         class="edit-btn"
                     >
                         Edit
                     </button>
                     <button
-                        v-if="
-                            authStore.isAdmin ||
-                            event.organizers.includes(authStore.user?.username)
-                        "
+                        v-if="canManageEvent(event)"
                         @click="deleteEvent(event.id)"
                         class="delete-btn"
                     >
@@ -249,7 +254,9 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="end_date">End Date (optional for multi-day events)</label>
+                        <label for="end_date"
+                            >End Date (optional for multi-day events)</label
+                        >
                         <input
                             type="date"
                             id="end_date"
@@ -373,7 +380,9 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="edit-end_date">End Date (optional for multi-day events)</label>
+                        <label for="edit-end_date"
+                            >End Date (optional for multi-day events)</label
+                        >
                         <input
                             type="date"
                             id="edit-end_date"
@@ -434,7 +443,9 @@
             <div class="modal details-modal" @click.stop>
                 <div class="details-header">
                     <h2>{{ selectedEvent.name }}</h2>
-                    <p class="event-description">{{ selectedEvent.description }}</p>
+                    <p class="event-description">
+                        {{ selectedEvent.description }}
+                    </p>
                     <button @click="closeDetails" class="close-btn">×</button>
                 </div>
 
@@ -445,19 +456,34 @@
                             <div class="schedule-row">
                                 <span class="schedule-label">Start:</span>
                                 <span class="schedule-value">
-                                    {{ formatDate(selectedEvent.start_date) }} at {{ formatTime(selectedEvent.start_time) }}
+                                    {{ formatDate(selectedEvent.start_date) }}
+                                    at
+                                    {{ formatTime(selectedEvent.start_time) }}
                                 </span>
                             </div>
-                            <div v-if="selectedEvent.end_date" class="schedule-row">
+                            <div
+                                v-if="selectedEvent.end_date"
+                                class="schedule-row"
+                            >
                                 <span class="schedule-label">End:</span>
                                 <span class="schedule-value">
-                                    {{ formatDate(selectedEvent.end_date) }} 
-                                    <span v-if="selectedEvent.end_time">at {{ formatTime(selectedEvent.end_time) }}</span>
+                                    {{ formatDate(selectedEvent.end_date) }}
+                                    <span v-if="selectedEvent.end_time"
+                                        >at
+                                        {{
+                                            formatTime(selectedEvent.end_time)
+                                        }}</span
+                                    >
                                 </span>
                             </div>
-                            <div v-else-if="selectedEvent.end_time" class="schedule-row">
+                            <div
+                                v-else-if="selectedEvent.end_time"
+                                class="schedule-row"
+                            >
                                 <span class="schedule-label">End Time:</span>
-                                <span class="schedule-value">{{ formatTime(selectedEvent.end_time) }}</span>
+                                <span class="schedule-value">{{
+                                    formatTime(selectedEvent.end_time)
+                                }}</span>
                             </div>
                         </div>
                     </div>
@@ -700,7 +726,7 @@ const createEvent = async () => {
             start_date: newEvent.start_date,
             start_time: newEvent.start_time + ":00", // Ensure HH:MM:SS format
         };
-        
+
         // Only include optional fields if they have values
         if (newEvent.end_date) {
             eventData.end_date = newEvent.end_date;
@@ -711,7 +737,7 @@ const createEvent = async () => {
         if (newEvent.notes.length > 0) {
             eventData.notes = newEvent.notes;
         }
-        
+
         console.log("Sending event data:", eventData);
         await eventStore.createEvent(eventData);
         closeModal();
@@ -728,6 +754,13 @@ const deleteEvent = async (id: string) => {
             console.error("Failed to delete event:", error);
         }
     }
+};
+
+const openCreateModal = () => {
+    if (authStore.user) {
+        organizersText.value = authStore.user.username;
+    }
+    showCreateForm.value = true;
 };
 
 const viewDetails = (event: Event) => {
@@ -750,8 +783,6 @@ const closeModal = () => {
     notesText.value = "";
 };
 
-
-
 const startEditEvent = (event: Event) => {
     editingEvent.value = event;
     editingEventData.name = event.name;
@@ -762,7 +793,9 @@ const startEditEvent = (event: Event) => {
     editingEventData.end_date = event.end_date || "";
     // Format time for HTML time input (HH:MM format from HH:MM:SS)
     editingEventData.start_time = event.start_time.substring(0, 5);
-    editingEventData.end_time = event.end_time ? event.end_time.substring(0, 5) : "";
+    editingEventData.end_time = event.end_time
+        ? event.end_time.substring(0, 5)
+        : "";
     editingEventData.notes = [...event.notes];
 
     editOrganizersText.value = event.organizers.join("\n");
@@ -785,7 +818,7 @@ const updateEvent = async () => {
             start_date: editingEventData.start_date,
             start_time: editingEventData.start_time + ":00", // Ensure HH:MM:SS format
         };
-        
+
         // Only include optional fields if they have values
         if (editingEventData.end_date) {
             updateData.end_date = editingEventData.end_date;
@@ -796,7 +829,7 @@ const updateEvent = async () => {
         if (editingEventData.notes.length > 0) {
             updateData.notes = editingEventData.notes;
         }
-        
+
         console.log("Sending update data:", updateData);
         await eventStore.updateEvent(editingEvent.value.id, updateData);
         closeEditModal();
@@ -822,8 +855,6 @@ const closeEditModal = () => {
     editNotesText.value = "";
 };
 
-
-
 const closeDetails = () => {
     selectedEvent.value = null;
 };
@@ -831,6 +862,15 @@ const closeDetails = () => {
 const clearFilters = () => {
     filterOrganizer.value = "";
     filterLocation.value = "";
+};
+
+const canManageEvent = (event: Event): boolean => {
+    if (!authStore.user) return false;
+    return (
+        authStore.isAdmin ||
+        (authStore.isOrganizer &&
+            event.organizers.includes(authStore.user.username))
+    );
 };
 
 const isParticipant = (event: Event): boolean => {
@@ -859,16 +899,16 @@ const formatDateTime = (dateString: string) => {
 
 const formatTime = (timeString: string) => {
     if (!timeString) return "";
-    
+
     // Handle both HH:MM and HH:MM:SS formats
-    const [hours, minutes] = timeString.split(':');
+    const [hours, minutes] = timeString.split(":");
     const time = new Date();
     time.setHours(parseInt(hours));
     time.setMinutes(parseInt(minutes));
-    return time.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: true 
+    return time.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
     });
 };
 

@@ -75,7 +75,7 @@ const handleLogin = async () => {
 
     try {
         await authStore.login(form.username, form.password);
-        router.push("/resolutions");
+        router.push("/events");
     } catch (err: any) {
         error.value =
             err.response?.data?.detail || "Login failed. Please try again.";

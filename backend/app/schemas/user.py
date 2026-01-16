@@ -1,12 +1,14 @@
+from datetime import datetime
 from enum import Enum
 from typing import Optional
+
 from pydantic import BaseModel, EmailStr
-from datetime import datetime
 
 
 class UserRole(str, Enum):
     UNAUTHENTICATED = "unauthenticated"
     USER = "user"
+    ORGANIZER = "organizer"
     ADMIN = "admin"
 
 

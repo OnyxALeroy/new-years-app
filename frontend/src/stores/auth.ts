@@ -9,6 +9,8 @@ export const useAuthStore = defineStore("auth", () => {
 
   const isAuthenticated = computed(() => !!token.value && !!user.value);
   const isAdmin = computed(() => user.value?.role === "admin");
+  const isOrganizer = computed(() => user.value?.role === "organizer");
+  const canCreateEvents = computed(() => isAdmin.value || isOrganizer.value);
 
   const login = async (username: string, password: string) => {
     try {
@@ -68,6 +70,8 @@ export const useAuthStore = defineStore("auth", () => {
     token,
     isAuthenticated,
     isAdmin,
+    isOrganizer,
+    canCreateEvents,
     login,
     register,
     logout,
