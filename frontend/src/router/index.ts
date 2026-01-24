@@ -29,6 +29,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: "/organizer",
+      name: "Organizer",
+      component: () => import("@/views/OrganizerView.vue"),
+      meta: { requiresAuth: true, requiresOrganizer: true },
+    },
+    {
       path: "/admin",
       name: "Admin",
       component: () => import("@/views/AdminView.vue"),
@@ -60,6 +66,11 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    next("/events");
+    return;
+  }
+
+  if (to.meta.requiresOrganizer && !authStore.isOrganizer && !authStore.isAdmin) {
     next("/events");
     return;
   }

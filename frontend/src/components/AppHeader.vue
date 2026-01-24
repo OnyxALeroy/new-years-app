@@ -17,6 +17,9 @@
                     <router-link to="/profile" class="nav-link"
                         >My Profile</router-link
                     >
+                    <router-link v-if="isOrganizer || isAdmin" to="/organizer" class="nav-link"
+                        >Organizer</router-link
+                    >
                     <router-link v-if="isAdmin" to="/admin" class="nav-link"
                         >Admin</router-link
                     >
@@ -54,6 +57,7 @@ const router = useRouter();
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 const isAdmin = computed(() => authStore.isAdmin);
+const isOrganizer = computed(() => authStore.isOrganizer);
 const user = computed(() => authStore.user);
 
 const logout = () => {
